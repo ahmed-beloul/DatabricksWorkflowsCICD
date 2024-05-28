@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+      - feat/add_data_transformation
+
+
+variables:
+  - group : api_tokens
+  - name : SOURCE_API_TOKEN
+    value : $(source_token)
+  - name : TARGET_API_TOKEN
+    value : $(target_token)
+  - name : SOURCE_WORKSPACE_URL
+    value : $(source_workspace_url)
+  - name : TARGET_WORKSPACE_URL
+    value : $(target_workspace_url)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    mkdir jobs_config
+  displayName: 'Create jobs_config directory'
+  workingDirectory: $(System.DefaultWorkingDirectory)
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9'
+    addToPath: true
+
+- script: |
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
+  workingDirectory: $(System.DefaultWorkingDirectory)
+
+- script: |
+    python export_workflows.py --workspace-url $(SOURCE_WORKSPACE_URL) --api-token $(SOURCE_API_TOKEN)
+  displayName: 'Export Databricks Jobs'
+  workingDirectory: $(System.DefaultWorkingDirectory)
+
+- script: |
+    python deploy_workflows.py --workspace-url $(TARGET_WORKSPACE_URL) --api-token $(TARGET_API_TOKEN)
+  displayName: 'Deploy Databricks Jobs'
+  workingDirectory: $(System.DefaultWorkingDirectory)
